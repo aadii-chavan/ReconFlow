@@ -95,14 +95,32 @@ graph LR
     style F fill:#f99,stroke:#333,stroke-width:2px
 ```
 
-### High-Level Architecture (Diagram)
+### Transaction Lifecycle (Sequence Diagram)
 
-```
-[Gateway Service] --> topic: gateway_txns  \
-                                            --> [Event Stream (Kafka/Redpanda)] --> [Reconciliation Worker(s)] --> [Postgres (events + audit)]
-[Bank Service]    --> topic: bank_txns     /                                       \--> [Redis (state + timers)]
-                                                                                      \--> [Alerting / Ops UI (WebSockets)]
-                                                                                      \--> [Dashboard (React)]
+```mermaid
+sequenceDiagram
+    participant U as User/App
+    participant G as Gateway
+    participant B as Bank
+    participant R as RealRecon 🤖
+    participant D as Dashboard 🖥️
+
+    U->>G: Initiate Payment
+    G->>R: Event: Payment Captured
+    R->>D: Update: PENDING
+    
+    par Async Bank Process
+        B->>B: Post Ledger Entry
+        B->>R: Event: Ledger Posted
+    end
+    
+    R->>R: Match (Gateway vs Bank)
+    alt Match Successful
+        R->>D: Update: ✅ MATCHED
+    else Amount Mismatch
+        R->>D: Update: ⚠️ MISMATCH
+        R->>R: Trigger Alert / Auto-Retry
+    end
 ```
 
 ---
