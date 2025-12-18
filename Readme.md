@@ -95,6 +95,16 @@ graph LR
     style F fill:#f99,stroke:#333,stroke-width:2px
 ```
 
+### High-Level Architecture (Diagram)
+
+```
+[Gateway Service] --> topic: gateway_txns  \
+                                            --> [Event Stream (Kafka/Redpanda)] --> [Reconciliation Worker(s)] --> [Postgres (events + audit)]
+[Bank Service]    --> topic: bank_txns     /                                       \--> [Redis (state + timers)]
+                                                                                      \--> [Alerting / Ops UI (WebSockets)]
+                                                                                      \--> [Dashboard (React)]
+```
+
 ---
 
 ## ✨ Key Features (Feature Highlights)
