@@ -1,4 +1,4 @@
-# ⚡ RealRecon — Real-time Transaction Reconciliation Engine
+# ⚡ ReconFlow — Real-time Transaction Reconciliation Engine
 
 > **Detect mismatches, auto-resolve errors, and gain full visibility into your payments — in seconds, not hours.**
 
@@ -7,15 +7,15 @@
 
 ---
 
-## 📖 What is RealRecon?
+## 📖 What is ReconFlow?
 
-Payment systems aren't just one computer talking to another. They are complex networks where **Users**, **Gateways**, and **Banks** all keep their own separate ledgers. RealRecon is the "source of truth" that listens to all of them in real-time to ensure they agree.
+Payment systems aren't just one computer talking to another. They are complex networks where **Users**, **Gateways**, and **Banks** all keep their own separate ledgers. ReconFlow is the "source of truth" that listens to all of them in real-time to ensure they agree.
 
 ---
 
 ## 🏦 The Context: How Payment Systems Work
 
-To understand why we built RealRecon, let's look at the lifecycle of a digital payment.
+To understand why we built ReconFlow, let's look at the lifecycle of a digital payment.
 
 ### The Simple Story
 1.  **You** buy a coffee (₹100).
@@ -57,7 +57,7 @@ If everything worked perfectly, we wouldn't need reconciliation. But distributed
 
 ---
 
-## 🚀 Our Approach: Why RealRecon is Better
+## 🚀 Our Approach: Why ReconFlow is Better
 
 We treat reconciliation as a **Real-Time Data Problem**, not a "end-of-day accounting problem".
 
@@ -68,7 +68,7 @@ We treat reconciliation as a **Real-Time Data Problem**, not a "end-of-day accou
 
 ### Why It's Better
 *   **Instant Observability:** You see the mismatch the second it happens.
-*   **Auto-Remediation:** If the bank is silent, **RealRecon** automatically retries or replays the event. No human needed.
+*   **Auto-Remediation:** If the bank is silent, **ReconFlow** automatically retries or replays the event. No human needed.
 *   **Audit-Ready:** Every decision is logged. Perfect for compliance.
 
 ---
@@ -80,7 +80,7 @@ graph LR
     A[Customer Pays] -->|Event 1| B(Gateway)
     A -->|Event 2| C(Bank)
     
-    B -->|Stream: gateway_txns| D{RealRecon Engine}
+    B -->|Stream: gateway_txns| D{ReconFlow Engine}
     C -->|Stream: bank_txns| D
     
     D -->|1. Normalize| D
@@ -95,6 +95,16 @@ graph LR
     style F fill:#f99,stroke:#333,stroke-width:2px
 ```
 
+### High-Level Architecture (Diagram)
+
+```
+[Gateway Service] --> topic: gateway_txns  \
+                                            --> [Event Stream (Kafka/Redpanda)] --> [Reconciliation Worker(s)] --> [Postgres (events + audit)]
+[Bank Service]    --> topic: bank_txns     /                                       \--> [Redis (state + timers)]
+                                                                                      \--> [Alerting / Ops UI (WebSockets)]
+                                                                                      \--> [Dashboard (React)]
+```
+
 ### Transaction Lifecycle (Sequence Diagram)
 
 ```mermaid
@@ -102,7 +112,7 @@ sequenceDiagram
     participant U as User/App
     participant G as Gateway
     participant B as Bank
-    participant R as RealRecon 🤖
+    participant R as ReconFlow 🤖
     participant D as Dashboard 🖥️
 
     U->>G: Initiate Payment
@@ -158,3 +168,6 @@ sequenceDiagram
 
 Built for **Tech Fiesta PICT**.
 *   **GitHub:** [aadii-chavan/ReconFlow](https://github.com/aadii-chavan/ReconFlow)
+
+---
+*ReconFlow — Because every transaction counts.*
