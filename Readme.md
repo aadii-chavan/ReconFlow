@@ -1,210 +1,159 @@
-# RealRecon — Real-time Transaction Reconciliation Engine
+# ⚡ RealRecon — Real-time Transaction Reconciliation Engine
 
-**Detect mismatches, auto-resolve common errors, and get full observability of payments — in seconds, not hours.**
+> **Detect mismatches, auto-resolve errors, and gain full visibility into your payments — in seconds, not hours.**
 
-RealRecon is an event-driven reconciliation engine designed for modern payment systems (UPI, cards, wallets). It provides stream ingestion, deterministic matching, alerts & auto-remediation, and a live dashboard for full observability.
-
-**Primary CTAs:**
-* [View on GitHub](#)
-* [Demo (Live Dashboard)](#)
+![Status](https://img.shields.io/badge/Status-Beta-blue?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 ---
 
-## 🚀 Key Benefits
+## 📖 What is RealRecon?
 
-* **Instant detection:** Identify missing/duplicate/amount-mismatch events within seconds.
-* **Actionable alerts:** Prioritised alerts with context and automated retry paths.
-* **Reproducible audits:** Full immutable event log and audit trail for compliance.
-* **Developer friendly:** Small codebase, docker compose, and sample event producers for fast demos.
-* **Extensible:** Add new payment rails, custom matching rules, and ML anomaly detectors.
+In the world of digital payments, money moves between multiple systems (Your App → Payment Gateway → Bank). Sometimes, these systems get out of sync. A customer might be charged, but the bank doesn't confirm it, or the gateway says "Failed" while the money is deducted.
 
----
+**RealRecon** is an intelligent engine that watches these transactions in real-time. It acts as an unbiased referee, checking every payment event against bank records instantly to ensure everything adds up.
 
-## 🎯 Who it’s for
+### The Problem vs. The Solution
 
-* Hackathon teams building payment features
-* Fintech startups validating reconciliation ideas
-* Engineers preparing interviews or demos with a live system
+| The Old Way (Batch Processing) ❌ | The RealRecon Way (Real-Time) ✅ |
+| :--- | :--- |
+| **Too Slow:** You find out about errors the next day. | **Instant:** Detects errors within seconds. |
+| **Manual Work:** Teams spend hours checking excel sheets. | **Automated:** The system fixes common errors itself. |
+| **Frustrated Users:** Customers wait days for refunds. | **Happy Users:** Issues are resolved before they notice. |
 
 ---
 
-## ✨ Feature Highlights
+## 🔄 How It Works
 
-* **Event Ingestion:** Simulate/integrate gateway and bank via webhooks, Kafka, or direct API.
-* **Normalization:** Convert diverse event shapes into a unified transaction model.
-* **Matching Engine:** Deterministic + fuzzy rules (id, amount, time-window).
-* **State Machine:** Tracks lifecycle (INIT → GATEWAY_RECEIVED → BANK_RECEIVED → MATCHED/MISMATCHED → RESOLVED).
-* **Timers & SLA Rules:** Per-txn timers to escalate missing events.
-* **Auto-resolve Flows:** Retry, replay, or automatic ledger correction hooks.
-* **Dashboard & Logs:** Live stream, filters, per-txn timeline, exportable reports.
-* **Audit + Replay:** Replay events from stream for forensic debugging.
+Imagine a "Transaction" as a package traveling through checkpoints. RealRecon watches the checkpoints.
 
----
-
-## 🛠 Tech Stack
-
-* **Backend:** Python (FastAPI)
-* **Stream:** Kafka / Redpanda (or Redis Streams for lightweight)
-* **Data Store:** PostgreSQL + Redis for real-time state
-* **Frontend:** React + Vite + WebSockets (SSE)
-* **Deployment:** Docker Compose / Kubernetes
-* **Observability:** Prometheus + Grafana (metrics), ELK for logs
-
----
-
-## 🏗 System Architecture
-
-### Overview
-1. **Gateway Service:** Sends "Payment Captured" events.
-2. **Bank Service:** Sends "Ledger Posted" events.
-3. **Recon Engine:** Listens to both streams, matches pairs, starts SLA timers, identifies mismatches, and updates the state.
-4. **Dashboard:** Displays real-time status via WebSockets.
-
-### High-Level Diagram
-
-```
-[Gateway Service] --> topic: gateway_txns  \
-                                            --> [Event Stream (Kafka/Redpanda)] --> [Reconciliation Worker(s)] --> [Postgres (events + audit)]
-[Bank Service]    --> topic: bank_txns     /                                       \--> [Redis (state + timers)]
-                                                                                      \--> [Alerting / Ops UI (WebSockets)]
-                                                                                      \--> [Dashboard (React)]
+```mermaid
+graph LR
+    A[Customer Pays] -->|Event 1| B(Gateway)
+    A -->|Event 2| C(Bank)
+    
+    B -->|Stream| D{RealRecon Engine}
+    C -->|Stream| D
+    
+    D -->|Match?| E[✅ Matched]
+    D -->|Mismatch?| F[⚠️ Alert Ops Team]
+    
+    style D fill:#f9f,stroke:#333,stroke-width:2px
+    style E fill:#9f9,stroke:#333,stroke-width:2px
+    style F fill:#f99,stroke:#333,stroke-width:2px
 ```
 
+1.  **Ingest:** We listen to messages from payment gateways and banks.
+2.  **Match:** We compare the ID, Amount, and Status of these messages.
+3.  **Resolve:** If they match, great! If not, we start a timer. If the missing piece doesn't arrive, we alert you or auto-fix it.
+
 ---
 
-## 💻 Quickstart
+## 🚀 Key Features
+
+*   **⚡️ Instant Detection**
+    Identify missing payments, duplicate charges, or amount discrepancies immediately as they happen.
+
+*   **🤖 Auto-Resolution**
+    Smart rules automatically retry failed checks or query the bank, reducing the need for manual intervention.
+
+*   **📊 Live Dashboard**
+    Watch your payment health in real-time. See transactions flow in, turn green (matched), or red (alert) instantly.
+
+*   **🛡 Audit Trails**
+    Every decision is logged. You have a permanent, unchangeable history of exactly what happened for every penny.
+
+---
+
+## 🏗 System Architecture (For Developers)
+
+RealRecon is built on a modern, event-driven stack designed for speed and reliability.
+
+```mermaid
+sequenceDiagram
+    participant U as User/App
+    participant G as Gateway
+    participant B as Bank
+    participant R as RealRecon 🤖
+    participant D as Dashboard 🖥️
+
+    U->>G: Initiate Payment
+    G->>R: Event: Payment Captured
+    R->>D: Update: PENDING
+    
+    par Async Bank Process
+        B->>B: Post Ledger Entry
+        B->>R: Event: Ledger Posted
+    end
+    
+    R->>R: Match (Gateway vs Bank)
+    alt Match Successful
+        R->>D: Update: ✅ MATCHED
+    else Amount Mismatch
+        R->>D: Update: ⚠️ MISMATCH
+        R->>R: Trigger Alert / Auto-Retry
+    end
+```
+
+### 🛠 Tech Stack
+
+*   **Backend:** Python (FastAPI) for high-performance logic.
+*   **Streaming:** Apache Kafka / Redpanda for handling massive event volumes.
+*   **Database:** PostgreSQL (Audit) + Redis (Real-time State).
+*   **Frontend:** React + Vite for the live operations dashboard.
+*   **DevOps:** Docker Compose for one-click local deployment.
+
+---
+
+## 💻 Quick Start
+
+Want to see it in action? You can run the entire system on your laptop.
 
 ### Prerequisites
-* Docker & Docker Compose
-* Python 3.9+ (for local scripts)
+*   [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed.
 
-### Running Locally
+### Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/real-recon.git
-   cd real-recon
-   ```
+1.  **Clone the Repo**
+    ```bash
+    git clone https://github.com/aadii-chavan/ReconFlow.git
+    cd ReconFlow
+    ```
 
-2. **Start the infrastructure:**
-   ```bash
-   cd infra
-   docker compose up --build
-   ```
+2.  **Run the System**
+    ```bash
+    cd infra
+    docker compose up --build
+    ```
 
-3. **Open the Dashboard:**
-   Visit `http://localhost:3000` to view the live stream.
+3.  **Open the Dashboard**
+    Go to `http://localhost:3000` in your browser.
 
-### Running Demo Scenarios
-
-We provide simulation scripts in `producers/` to verify the logic.
-
-**Happy Path (Match):**
-```bash
-# Gateway event followed closely by Bank event
-python producers/gateway_sim.py --txn TXN1001 --status SUCCESS
-python producers/bank_sim.py --txn TXN1001 --status SUCCESS
-```
-*Result: Dashboard shows `MATCHED`.*
-
-**Missing Bank Event (SLA Breach):**
-```bash
-# Gateway sent, Bank never responds
-python producers/gateway_sim.py --txn TXN1002 --status SUCCESS
-# Wait 60s...
-```
-*Result: Dashboard shows `BANK_MISSING` alert.*
-
-**Amount Mismatch:**
-```bash
-python producers/gateway_sim.py --txn TXN1003 --amount 5000
-python producers/bank_sim.py --txn TXN1003 --amount 4500
-```
-*Result: Dashboard shows `AMOUNT_MISMATCH`.*
+4.  **Run a Demo Scenario**
+    Open a new terminal and run the simulation scripts:
+    ```bash
+    # Verify a happy path transaction
+    python producers/happy_path.py
+    ```
 
 ---
 
-## 🔌 API Examples
+## 📸 Demo Scenarios
 
-You can manually trigger events via the REST API.
+We have prepared scripts to simulate real-world banking issues:
 
-**Emit Gateway Event:**
-```bash
-curl -X POST http://localhost:8000/events \
-  -H "Content-Type: application/json" \
-  -d '{
-    "txn_id": "TXN1001",
-    "amount": 50000,
-    "currency": "INR",
-    "source": "GATEWAY",
-    "event_type": "PAYMENT_CAPTURED",
-    "status": "SUCCESS",
-    "timestamp": "2025-12-18T10:15:30Z"
-  }'
-```
-
-**Query Transaction State:**
-```bash
-curl http://localhost:8000/txns/TXN1001
-```
+1.  **The Happy Path:** Everyone does their job. Gateway and Bank events arrive perfectly. -> **Status: MATCHED**
+2.  **The "Missing Bank" Event:** The Gateway confirms, but the Bank is silent. -> **Status: ALERT (Bank Missing)**
+3.  **The Amount Mismatch:** Gateway says ₹500, Bank says ₹450. -> **Status: MISMATCH (Check Logs)**
 
 ---
 
-## 📊 Database Schema
+## � Contact & Support
 
-### `events` (Immutable Log)
-Stores every incoming raw event for auditability.
-```sql
-CREATE TABLE events (
-  id BIGSERIAL PRIMARY KEY,
-  txn_id TEXT,
-  source TEXT, -- GATEWAY, BANK
-  event_type TEXT,
-  status TEXT,
-  amount BIGINT,
-  raw_payload JSONB,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
+Built for **Tech Fiesta PICT**.
 
-### `transactions` (Current State)
-Stores the reconciled state of unique transactions.
-```sql
-CREATE TABLE transactions (
-  txn_id TEXT PRIMARY KEY,
-  state TEXT, -- INIT, MATCHED, MISMATCHED, BANK_MISSING
-  gateway_event_id BIGINT,
-  bank_event_id BIGINT,
-  last_updated TIMESTAMPTZ DEFAULT now()
-);
-```
+*   **View Code:** [GitHub](https://github.com/aadii-chavan/ReconFlow)
+*   **Team:** [Aditya Chavan](https://github.com/aadii-chavan)
 
 ---
-
-## 🛡 Security & Compliance
-
-* **HMAC Signatures:** Verify webhook sources.
-* **Encryption:** Sensitive fields encrypted at rest (PG) and in transit (TLS).
-* **Audit Logs:** Full immutable history of all automated and manual actions.
-* **Limit PII:** Avoid storing full PAN/CVV; rely on tokenized references.
-
----
-
-## 🚀 Roadmap
-
-* [x] Core Reconciliation Engine (Exact Match)
-* [x] Real-time Dashboard (WebSockets)
-* [x] SLA Timers & Alerts
-* [ ] Fuzzy Matching (ML-based)
-* [ ] Automated Ledger Correction
-* [ ] Slack/PagerDuty Integrations
-
----
-
-## 🤝 Contributing
-
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+*RealRecon — Because every transaction counts.*
